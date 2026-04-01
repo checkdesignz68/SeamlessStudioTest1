@@ -1342,69 +1342,58 @@ function drawPattern(ctx, targetW, targetH, scale, useTiled, product = null) {
             tryNext();
         });
     }
+ async function showMugMockup(idx) {
+    const patternCanvas = productCanvases[idx];
+    if (!patternCanvas) return;
 
-    async function showMugMockup(idx) {
-        const designCanvas = productCanvases[idx];
-        if (!designCanvas) return;
+    const base = await loadImage('mockups/mug_base_simple_realistic.png');
+    const mask = await loadImage('mockups/mug_mask_clean.png');
+    const shading = await loadImage('mockups/mug_shading_overlay.png');
 
-        try {
-            const [base, mask, shading] = await Promise.all([
-                loadAssetImageFromCandidates([
-                    './mug_base_simple_realistic.png',
-                    'mug_base_simple_realistic.png',
-                    './mockups/mug_base_simple_realistic.png',
-                    'mockups/mug_base_simple_realistic.png'
-                ]),
-                loadAssetImageFromCandidates([
-                    './mug_mask_clean.png',
-                    'mug_mask_clean.png',
-                    './mockups/mug_mask_clean.png',
-                    'mockups/mug_mask_clean.png'
-                ]),
-                loadAssetImageFromCandidates([
-                    './mug_shading_overlay.png',
-                    'mug_shading_overlay.png',
-                    './mockups/mug_shading_overlay.png',
-                    'mockups/mug_shading_overlay.png'
-                ])
-            ]);
+    const canvas = zoomCanvas;
+    canvas.width = base.width;
+    canvas.height = base.height;
 
-            zoomCanvas.width = base.naturalWidth || base.width;
-            zoomCanvas.height = base.naturalHeight || base.height;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            const ctx = zoomCanvas.getContext('2d');
-            ctx.clearRect(0, 0, zoomCanvas.width, zoomCanvas.height);
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
+    // ✅ STEP 1: draw mug base FIRST
+    ctx.drawImage(base, 0, 0);
 
-            const pattern = ctx.createPattern(designCanvas, 'repeat');
-            ctx.save();
-            ctx.fillStyle = pattern;
-            ctx.fillRect(0, 0, zoomCanvas.width, zoomCanvas.height);
-            ctx.restore();
+    // ✅ STEP 2: create scaled pattern (fix "too big" issue)
+    const scale = 0.5; // ← tweak this (0.4–0.7 is sweet spot)
 
-            ctx.globalCompositeOperation = 'destination-in';
-            ctx.drawImage(mask, 0, 0, zoomCanvas.width, zoomCanvas.height);
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = patternCanvas.width * scale;
+    tempCanvas.height = patternCanvas.height * scale;
 
-            ctx.globalCompositeOperation = 'destination-over';
-            ctx.drawImage(base, 0, 0, zoomCanvas.width, zoomCanvas.height);
+    const tctx = tempCanvas.getContext('2d');
+    tctx.drawImage(patternCanvas, 0, 0, tempCanvas.width, tempCanvas.height);
 
-            ctx.globalCompositeOperation = 'multiply';
-            ctx.drawImage(shading, 0, 0, zoomCanvas.width, zoomCanvas.height);
+    const pattern = ctx.createPattern(tempCanvas, 'repeat');
 
-            ctx.globalCompositeOperation = 'source-over';
+    // ✅ STEP 3: apply mask properly
+    ctx.save();
 
-            zoomInfo.innerHTML = `Coffee Mug mock-up · realistic asset preview · export remains ${formatDimension(products[idx].w)} × ${formatDimension(products[idx].h)}`;
-            currentZoomMode = 'mug-mockup';
-            currentZoomProductIndex = idx;
-            zoomModal.classList.remove('hidden');
-        } catch (error) {
-            console.error(error);
-            showToast('Mug assets not found. Put the 3 PNG files in the same folder as this HTML or in /mockups.', 3500);
-        }
-    }
+    ctx.drawImage(mask, 0, 0, canvas.width, canvas.height);
+    ctx.globalCompositeOperation = 'source-in';
 
-    function updateSvgOptionState() {
+    ctx.fillStyle = pattern;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.restore();
+
+    // ✅ STEP 4: shading overlay for realism
+    ctx.globalCompositeOperation = 'multiply';
+    ctx.drawImage(shading, 0, 0);
+
+    ctx.globalCompositeOperation = 'source-over';
+
+    zoomInfo.innerHTML = "☕ realistic mug mockup (scaled preview)";
+    zoomModal.classList.remove('hidden');
+}
+
+            function updateSvgOptionState() {
         if (outputFormatSelect.value !== 'png' && outputFormatSelect.value !== 'jpeg') {
             outputFormatSelect.value = 'png';
         }
