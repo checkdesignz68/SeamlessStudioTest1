@@ -1,0 +1,2080 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Seamless Studio | Tester Version</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Quicksand:wght@300;400;500;600;700&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: linear-gradient(135deg, #0a0a1a 0%, #12122a 100%);
+            padding: 20px;
+            color: white;
+            min-height: 100vh;
+        }
+        .container { max-width: 1600px; margin: 0 auto; }
+
+        .header { text-align: center; margin-bottom: 30px; }
+        h1 {
+            font-family: 'Caveat', cursive;
+            font-size: 64px;
+            background: linear-gradient(135deg, #e0d9ff 0%, #b8aaff 50%, #8a7aff 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .subtitle {
+            font-family: 'Caveat', cursive;
+            font-size: 20px;
+            color: #b8aaff;
+        }
+
+        .main-layout { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 20px; align-items: start; }
+        .sidebar {
+            background: rgba(22, 33, 62, 0.85);
+            backdrop-filter: blur(10px);
+            border-radius: 32px;
+            padding: 20px;
+            width: 100%;
+            min-width: 0;
+            max-height: 85vh;
+            overflow-y: auto;
+            border: 1px solid rgba(138, 122, 255, 0.3);
+        }
+        .content {
+            background: rgba(22, 33, 62, 0.85);
+            backdrop-filter: blur(10px);
+            border-radius: 32px;
+            padding: 20px;
+            width: 100%;
+            min-width: 0;
+            max-height: 85vh;
+            overflow-y: auto;
+            border: 1px solid rgba(138, 122, 255, 0.3);
+        }
+        @media (max-width: 820px) {
+            .main-layout { grid-template-columns: 1fr; }
+            .sidebar, .content { max-height: none; }
+        }
+
+        .upload-box {
+            border: 2px dashed #8a7aff;
+            border-radius: 24px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            background: rgba(30, 42, 74, 0.5);
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+        .upload-box:hover { background: rgba(37, 53, 95, 0.7); transform: scale(1.01); }
+        .upload-icon { font-size: 48px; margin-bottom: 10px; animation: float 3s infinite; }
+        @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+
+        .preview-section {
+            background: rgba(30, 42, 74, 0.5);
+            border-radius: 24px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .preview-row { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
+        .preview-item { text-align: center; cursor: pointer; }
+        .preview-item canvas {
+            width: 120px;
+            height: 120px;
+            border-radius: 20px;
+            border: 2px solid #8a7aff;
+            background: #0a0a1a;
+            transition: all 0.3s;
+            display: block;
+        }
+        .preview-item canvas:hover { box-shadow: 0 0 20px rgba(138, 122, 255, 0.4); }
+
+        .input-group {
+            background: rgba(30, 42, 74, 0.5);
+            border-radius: 24px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .input-group label {
+            display: block;
+            font-size: 12px;
+            color: #aaa;
+            margin-bottom: 6px;
+            font-family: 'Quicksand', sans-serif;
+        }
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 40px;
+            border: 1px solid #4a4a8a;
+            background: #16213e;
+            color: white;
+            font-size: 14px;
+            font-family: 'Quicksand', sans-serif;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(138, 122, 255, 0.2);
+            font-family: 'Quicksand', sans-serif;
+            font-size: 13px;
+        }
+        .info-row:last-child { border-bottom: none; }
+
+        button {
+            background: linear-gradient(135deg, #4a4a8a, #6b5fd3);
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+            font-family: 'Quicksand', sans-serif;
+        }
+        button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(107, 95, 211, 0.4); }
+        .download-btn {
+            background: linear-gradient(135deg, #8a7aff, #6b5fd3);
+            width: 100%;
+            margin-top: 10px;
+            font-weight: 600;
+        }
+
+        .remove-btn {
+            background: #ff6b6b !important;
+            color: #ffffff !important;
+            font-weight: 700;
+            border-radius: 999px;
+            padding: 10px 18px;
+            width: auto;
+            min-width: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            box-shadow: 0 8px 22px rgba(255, 107, 107, 0.25);
+        }
+        .remove-btn:hover:not(:disabled) {
+            background: #ff5252 !important;
+            box-shadow: 0 10px 24px rgba(255, 107, 107, 0.30) !important;
+            transform: translateY(-1px);
+            filter: none;
+        }
+
+        .product-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 15px;
+        }
+        .product-card {
+            background: rgba(30, 42, 74, 0.7);
+            border-radius: 20px;
+            padding: 10px;
+            width: 160px;
+            text-align: center;
+            border: 2px solid #4a4a8a;
+            position: relative;
+            transition: all 0.3s;
+        }
+        .product-card.selected { border-color: #8a7aff; background: rgba(37, 53, 106, 0.8); }
+        .product-card img {
+            width: 120px;
+            height: 120px;
+            border-radius: 12px;
+            object-fit: contain;
+            background: #0a0a1a;
+            display: block;
+            margin: 0 auto;
+        }
+        .product-name {
+            font-size: 11px;
+            font-weight: 500;
+            margin-top: 8px;
+            cursor: pointer;
+        }
+        .product-name:hover {
+            color: #8a7aff;
+        }
+        .product-dim {
+            font-size: 9px;
+            color: #aaa;
+        }
+        .product-checkbox {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            width: 18px;
+            height: 18px;
+            accent-color: #8a7aff;
+            z-index: 10;
+        }
+        .perfect-fit-badge {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #8a7aff;
+            border-radius: 12px;
+            padding: 2px 6px;
+            font-size: 9px;
+            font-weight: bold;
+            color: white;
+        }
+        .wrap-badge {
+            position: absolute;
+            bottom: 5px;
+            left: 5px;
+            background: rgba(138, 122, 255, 0.8);
+            border-radius: 12px;
+            padding: 2px 6px;
+            font-size: 8px;
+            font-weight: bold;
+            color: white;
+        }
+        .delete-btn, .rename-btn, .rotate-btn {
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            color: white;
+            border: 2px solid white;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            transition: all 0.2s;
+        }
+        .delete-btn { top: -8px; right: -8px; background: #ff6b6b; }
+        .rename-btn { top: -8px; left: -8px; background: #4a8aff; }
+        .rotate-btn { top: -8px; left: 50%; transform: translateX(-50%); background: #8a7aff; }
+        .delete-btn:hover, .rename-btn:hover, .rotate-btn:hover { transform: scale(1.1); }
+        .rotate-btn:hover { transform: translateX(-50%) scale(1.1); }
+
+
+        .mockup-btn {
+            background: linear-gradient(135deg, #7e74e8, #6b5fd3);
+            flex: 1;
+            padding: 8px 10px;
+            font-size: 11px;
+            position: relative;
+            z-index: 20;
+            cursor: pointer;
+            pointer-events: auto;
+        }
+
+        .scale-slider-container {
+            margin-top: 8px;
+            width: 100%;
+        }
+        .scale-slider-container label {
+            font-size: 9px;
+            color: #aaa;
+            margin-bottom: 4px;
+            display: block;
+        }
+        .individual-scale-slider {
+            width: 100%;
+            height: 4px;
+            -webkit-appearance: none;
+            background: #4a4a8a;
+            border-radius: 5px;
+        }
+        .individual-scale-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #8a7aff;
+            cursor: pointer;
+        }
+        .scale-value {
+            font-size: 9px;
+            color: #8a7aff;
+            margin-top: 4px;
+            display: block;
+            text-align: center;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .hidden { display: none !important; }
+        .modal-content {
+            background: linear-gradient(135deg, #1e2a4a, #16213e);
+            border-radius: 32px;
+            padding: 25px;
+            text-align: center;
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow: auto;
+            border: 2px solid #8a7aff;
+        }
+        .modal-content canvas { 
+            max-width: 100%; 
+            max-height: 70vh; 
+            border-radius: 16px;
+            object-fit: contain;
+        }
+        .modal-content input {
+            padding: 10px;
+            border-radius: 40px;
+            border: none;
+            margin: 10px 0;
+            width: 100%;
+        }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #1e2a4a, #16213e);
+            padding: 12px 24px;
+            border-radius: 50px;
+            border: 1px solid #8a7aff;
+            z-index: 1100;
+            font-size: 14px;
+        }
+        .unit-toggle { display: flex; gap: 10px; margin-bottom: 10px; }
+        .unit-btn {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            border-radius: 40px;
+            cursor: pointer;
+            background: #0a0a1a;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+        .unit-btn.active { background: linear-gradient(135deg, #8a7aff, #6b5fd3); color: white; }
+        .scale-range { display: flex; gap: 10px; align-items: center; }
+        .scale-range input { flex: 1; }
+        .scale-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            margin-top: 5px;
+        }
+        .scale-display {
+            font-size: 12px;
+            text-align: center;
+            margin-top: 8px;
+            padding: 8px;
+            background: rgba(138, 122, 255, 0.2);
+            border-radius: 40px;
+            font-family: monospace;
+        }
+        .tile-options {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .tile-option {
+            flex: 1;
+            text-align: center;
+            padding: 8px;
+            border-radius: 40px;
+            cursor: pointer;
+            background: #0a0a1a;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+        .tile-option.active {
+            cursor: default;
+            background: linear-gradient(135deg, #8a7aff, #6b5fd3);
+            color: white;
+        }
+        .preview-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 10px;
+            font-size: 12px;
+            color: rgba(255,255,255,0.85);
+            font-family: 'Quicksand', sans-serif;
+        }
+        .preview-toggle input {
+            width: 16px;
+            height: 16px;
+            accent-color: #8a7aff;
+        }
+        .add-product-group {
+            margin-top: 10px;
+        }
+        .dimension-inputs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .dimension-inputs input {
+            flex: 1;
+        }
+        .preset-btn {
+            flex: 1;
+            padding: 6px;
+            font-size: 11px;
+            background: #0a0a1a;
+            border-radius: 30px;
+        }
+        .preset-btn:hover {
+            background: #8a7aff;
+        }
+        .scale-presets {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>✿ Seamless Studio ✿</h1>
+        <div class="subtitle">perfect wraps for pens, pencils, tumblers & more</div>
+        <div style="margin-top:8px; font-size:13px; color:rgba(255,255,255,0.72);">Wrap items are auto-fitted — no scaling needed.</div>
+    </div>
+
+    <div class="main-layout">
+        <div class="sidebar">
+            <div class="upload-box" id="uploadBox">
+                <div class="upload-icon">✎</div>
+                <div style="font-family: 'Caveat', cursive; font-size: 18px;">drop your seamless pattern here</div>
+                <div style="font-size: 12px; margin-top: 8px;">PNG, JPG, WEBP (high resolution recommended)</div>
+            </div>
+            <input type="file" id="fileInput" accept="image/png,image/jpeg,image/jpg,image/webp" style="display: none;">
+
+            <div id="previewSection" style="display: none;">
+                <div class="preview-section">
+                    <div class="preview-row">
+                        <div class="preview-item">
+                            <canvas id="origCanvas" width="120" height="120"></canvas>
+                            <div>your pattern</div>
+                        </div>
+                        <div class="preview-item" id="tiledPreviewClickable">
+                            <canvas id="tiledCanvas" width="120" height="120"></canvas>
+                            <div>how it flows</div>
+                        </div>
+                    </div>
+                    <div class="tile-options" style="justify-content:center;">
+                        <button id="openPreviewBtn" class="tile-option active" style="width:100%; text-align:center; border:none;">open preview</button>
+                    </div>
+                    <button class="remove-btn" id="removeBtn" style="margin-top:10px; align-self:center;">✖ remove pattern</button>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>✎ pattern name</label>
+                <input type="text" id="patternName" value="seamless_pattern">
+            </div>
+
+            <div class="input-group">
+                <div class="unit-toggle" id="unitToggle">
+                    <div class="unit-btn active" data-unit="inches">📏 inches</div>
+                    <div class="unit-btn" data-unit="pixels">🖼️ pixels</div>
+                </div>
+            </div>
+
+
+            <div class="input-group">
+                <label>📦 output format</label>
+                <select id="outputFormat">
+                    <option value="png">PNG (lossless, best quality)</option>
+                    <option value="jpeg">JPEG (high quality)</option>
+                </select>
+            </div>
+
+            <div class="input-group add-product-group">
+                <label>➕ add custom product</label>
+                <div class="dimension-inputs">
+                    <input type="number" id="customW" step="any" placeholder="width" value="5.375">
+                    <input type="number" id="customH" step="any" placeholder="height" value="1.25">
+                </div>
+                <div style="font-size: 11px; color: #aaa; margin-bottom: 10px;">
+                    <span id="customWLabel">width (inches)</span> × <span id="customHLabel">height (inches)</span>
+                </div>
+                <button id="addCustomBtn" style="width: 100%;">✧ add product</button>
+            </div>
+
+            <div class="info-row"><span>status</span><span id="statusText">no image</span></div>
+            <div class="info-row"><span>pattern size</span><span id="sizeText">0x0</span></div>
+            <div class="info-row" style="display:none;"><span>tile size</span><span id="tiledSizeText">0x0</span></div>
+            <div class="info-row"><span>DPI</span><span id="dpiText">300</span></div>
+
+            <div id="downloadHint" style="font-size:11px; color:#b8aaff; margin-top:8px; line-height:1.4;"></div>
+        </div>
+
+        <div class="content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                    <h3 style="font-family: 'Caveat', cursive; margin:0;">✧ your products ✧</h3>
+                    <button class="download-btn" id="downloadBtn" disabled style="width:auto; margin-top:0;">📦 save selected designs</button>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-start;">
+                    <button id="selectAllBtn" disabled>select all</button>
+                    <button id="deselectAllBtn" disabled>deselect all</button>
+                    <span id="selectedCount" style="margin-left: 4px;">0/0</span>
+                </div>
+            </div>
+            <div class="product-grid" id="productGrid"></div>
+        </div>
+    </div>
+</div>
+
+<div id="zoomModal" class="modal hidden">
+    <div class="modal-content">
+        <canvas id="zoomCanvas"></canvas>
+        <div id="zoomInfo" style="margin: 15px 0;"></div>
+        <button id="closeZoomBtn">close</button>
+    </div>
+</div>
+<div id="renameModal" class="modal hidden">
+    <div class="modal-content">
+        <h3>✎ rename product</h3>
+        <input type="text" id="renameInput" placeholder="enter new name">
+        <button id="renameSave" style="margin: 5px;">save</button>
+        <button id="renameCancel">cancel</button>
+    </div>
+</div>
+<div id="toast" class="toast hidden"></div>
+
+<script>
+    const DPI = 300;
+    const PREVIEW_RENDER_SIZE = 360;
+    const THUMB_RENDER_SIZE = 440;
+    let originalImg = null;
+    let tiledImg = null;
+    let patternWidth = 0;
+    let patternHeight = 0;
+    let tiledPatternWidth = 0;
+    let tiledPatternHeight = 0;
+    let currentTileMultiplier = 2;
+    let products = [];
+    let selected = [];
+    let scales = [];
+    let productCanvases = [];
+    let displayUnit = "inches";
+    let renameIndex = -1;
+    let sourceFileMime = '';
+    let sourceFileName = '';
+    let originalIsSvg = false;
+    let originalSvgText = '';
+    let originalSourceDataUrl = '';
+    let showSeamGuides = true;
+    let currentZoomProductIndex = -1;
+    let currentZoomMode = '';
+    let currentImageObjectUrl = '';
+
+    // DOM Elements
+    const uploadBox = document.getElementById('uploadBox');
+    const fileInput = document.getElementById('fileInput');
+    const previewSection = document.getElementById('previewSection');
+    const removeBtn = document.getElementById('removeBtn');
+    const origCanvas = document.getElementById('origCanvas');
+    const origPreviewClickable = origCanvas.closest('.preview-item');
+    const tiledCanvas = document.getElementById('tiledCanvas');
+    const tiledPreviewClickable = document.getElementById('tiledPreviewClickable');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const selectAllBtn = document.getElementById('selectAllBtn');
+    const deselectAllBtn = document.getElementById('deselectAllBtn');
+    const productGrid = document.getElementById('productGrid');
+    const zoomCanvas = document.getElementById('zoomCanvas');
+    const zoomModal = document.getElementById('zoomModal');
+    const zoomInfo = document.getElementById('zoomInfo');
+    const closeZoomBtn = document.getElementById('closeZoomBtn');
+    const renameModal = document.getElementById('renameModal');
+    const renameInput = document.getElementById('renameInput');
+    const renameSave = document.getElementById('renameSave');
+    const renameCancel = document.getElementById('renameCancel');
+    const patternNameInput = document.getElementById('patternName');
+    const outputFormatSelect = document.getElementById('outputFormat');
+    const svgOption = document.getElementById('svgOption');
+    const statusText = document.getElementById('statusText');
+    const sizeText = document.getElementById('sizeText');
+    const tiledSizeText = document.getElementById('tiledSizeText');
+    const selectedCountSpan = document.getElementById('selectedCount');
+    const downloadHint = document.getElementById('downloadHint');
+    const toast = document.getElementById('toast');
+    const customW = document.getElementById('customW');
+    const customH = document.getElementById('customH');
+    const customWLabel = document.getElementById('customWLabel');
+    const customHLabel = document.getElementById('customHLabel');
+    const addCustomBtn = document.getElementById('addCustomBtn');
+    const openPreviewBtn = document.getElementById('openPreviewBtn');
+
+    const defaultProducts = [
+        { name: "Apple Pencil", wIn: 5.375, hIn: 1.25, type: "wrap", rotatable: false },
+        { name: "20oz Tumbler", wIn: 9.25, hIn: 8.20, type: "wrap", rotatable: false },
+        { name: "30oz Tumbler", wIn: 9.55, hIn: 10.25, type: "wrap", rotatable: false },
+        { name: "Standard Pen", wIn: 1.50, hIn: 4.75, type: "wrap", rotatable: false },
+        { name: "Coffee Mug", wIn: 8.50, hIn: 3.50, type: "wrap", rotatable: false },
+        { name: "Bookmark", wIn: 2.00, hIn: 6.00, type: "flat" },
+        { name: "Greeting Card", wIn: 5.00, hIn: 7.00, type: "flat" },
+        { name: "Square Card", wIn: 5.00, hIn: 5.00, type: "flat" },
+        { name: "Notebook", wIn: 7.25, hIn: 9.5, type: "flat" },
+        { name: "3600 Half Scale", wIn: 12, hIn: 12, type: "fixed", fixedScale: 0.5, fixedPxW: 3600, fixedPxH: 3600, sliderDisabled: true }
+    ];
+
+    function initProducts() {
+        products = [];
+        for (let p of defaultProducts) {
+            products.push({ 
+                name: p.name, 
+                w: p.fixedPxW ? p.fixedPxW : Math.round(p.wIn * DPI), 
+                h: p.fixedPxH ? p.fixedPxH : Math.round(p.hIn * DPI),
+                wIn: p.fixedPxW ? +(p.fixedPxW / DPI).toFixed(2) : p.wIn,
+                hIn: p.fixedPxH ? +(p.fixedPxH / DPI).toFixed(2) : p.hIn,
+                type: p.type,
+                isCustom: false,
+                rotatable: !!p.rotatable,
+                fixedScale: typeof p.fixedScale === 'number' ? p.fixedScale : null,
+                sliderDisabled: !!p.sliderDisabled
+            });
+        }
+        selected = new Array(products.length).fill(true);
+        scales = new Array(products.length).fill(1.0);
+    }
+    initProducts();
+
+
+    function getSeamAxis(product) {
+        if (!product) return "vertical";
+        if (product.type !== "wrap") return "vertical";
+        if (product.name === "Apple Pencil") return "horizontal";
+        return "vertical";
+    }
+
+    function getOriginalDims() {
+        return {
+            w: originalImg ? (originalImg.naturalWidth || originalImg.width) : 0,
+            h: originalImg ? (originalImg.naturalHeight || originalImg.height) : 0
+        };
+    }
+
+    function getRenderScale(product, index) {
+        if (product && typeof product.fixedScale === 'number') return product.fixedScale;
+        return scales[index] || 1;
+    }
+
+    function createTiledPattern(multiplier) {
+        if (!originalImg) return null;
+        return { virtual: true, multiplier };
+    }
+
+    function drawVirtualTile(ctx, dx, dy, dw, dh) {
+        if (!originalImg || dw <= 0 || dh <= 0) return;
+        const subW = dw / currentTileMultiplier;
+        const subH = dh / currentTileMultiplier;
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        for (let row = 0; row < currentTileMultiplier; row++) {
+            for (let col = 0; col < currentTileMultiplier; col++) {
+                ctx.drawImage(originalImg, dx + col * subW, dy + row * subH, subW, subH);
+            }
+        }
+    }
+
+    function drawSeamGuides(ctx, x, y, w, h, tileW, tileH) {
+        if (!tileW || !tileH) return;
+
+        ctx.save();
+        ctx.strokeStyle = '#ff00ff';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([]);
+
+        for (let lineX = x + tileW; lineX < x + w; lineX += tileW) {
+            ctx.beginPath();
+            ctx.moveTo(lineX, y);
+            ctx.lineTo(lineX, y + h);
+            ctx.stroke();
+        }
+
+        for (let lineY = y + tileH; lineY < y + h; lineY += tileH) {
+            ctx.beginPath();
+            ctx.moveTo(x, lineY);
+            ctx.lineTo(x + w, lineY);
+            ctx.stroke();
+        }
+
+        const size = 6;
+        for (let lineX = x + tileW; lineX < x + w; lineX += tileW) {
+            for (let lineY = y + tileH; lineY < y + h; lineY += tileH) {
+                ctx.beginPath();
+                ctx.moveTo(lineX - size, lineY);
+                ctx.lineTo(lineX + size, lineY);
+                ctx.moveTo(lineX, lineY - size);
+                ctx.lineTo(lineX, lineY + size);
+                ctx.stroke();
+            }
+        }
+
+        ctx.restore();
+    }
+
+    function drawProductPreviewThumb(ctx, canvas, product, thumbW, thumbH, padding = 20) {
+        ctx.clearRect(0, 0, thumbW, thumbH);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.fillStyle = '#0a0a1a';
+        ctx.fillRect(0, 0, thumbW, thumbH);
+
+        const scale = Math.min((thumbW - (padding * 2)) / product.w, (thumbH - (padding * 2)) / product.h);
+        const drawW = product.w * scale;
+        const drawH = product.h * scale;
+        const drawX = (thumbW - drawW) / 2;
+        const drawY = (thumbH - drawH) / 2;
+
+        ctx.drawImage(canvas, 0, 0, product.w, product.h, drawX, drawY, drawW, drawH);
+
+        return { drawX, drawY, drawW, drawH, scale };
+    }
+
+    function updatePreviews() {
+        if (!originalImg) return;
+
+        origCanvas.style.width = '120px';
+        origCanvas.style.height = '120px';
+        tiledCanvas.style.width = '120px';
+        tiledCanvas.style.height = '120px';
+
+        origCanvas.width = PREVIEW_RENDER_SIZE;
+        origCanvas.height = PREVIEW_RENDER_SIZE;
+        tiledCanvas.width = PREVIEW_RENDER_SIZE;
+        tiledCanvas.height = PREVIEW_RENDER_SIZE;
+
+        const origCtx = origCanvas.getContext('2d');
+        origCtx.clearRect(0, 0, origCanvas.width, origCanvas.height);
+        origCtx.imageSmoothingEnabled = true;
+        origCtx.imageSmoothingQuality = 'high';
+        origCtx.drawImage(
+            originalImg,
+            0, 0, originalImg.naturalWidth || originalImg.width, originalImg.naturalHeight || originalImg.height,
+            0, 0, origCanvas.width, origCanvas.height
+        );
+
+        if (tiledImg) {
+            const tiledCtx = tiledCanvas.getContext('2d');
+            tiledCtx.clearRect(0, 0, tiledCanvas.width, tiledCanvas.height);
+            tiledCtx.imageSmoothingEnabled = true;
+            tiledCtx.imageSmoothingQuality = 'high';
+            tiledCtx.fillStyle = '#0a0a1a';
+            tiledCtx.fillRect(0, 0, tiledCanvas.width, tiledCanvas.height);
+
+            const scale = Math.min(
+                tiledCanvas.width / tiledPatternWidth,
+                tiledCanvas.height / tiledPatternHeight
+            );
+            const w = tiledPatternWidth * scale;
+            const h = tiledPatternHeight * scale;
+            const x = (tiledCanvas.width - w) / 2;
+            const y = (tiledCanvas.height - h) / 2;
+
+            drawVirtualTile(tiledCtx, x, y, w, h);
+            drawSeamGuides(tiledCtx, x, y, w, h, w / currentTileMultiplier, h / currentTileMultiplier);
+        }
+
+        const tiledWidthInches = (tiledPatternWidth / DPI).toFixed(2);
+        const tiledHeightInches = (tiledPatternHeight / DPI).toFixed(2);
+        tiledSizeText.innerHTML = displayUnit === 'inches'
+            ? `${tiledWidthInches}" × ${tiledHeightInches}"`
+            : `${tiledPatternWidth} × ${tiledPatternHeight} px`;
+    }
+
+    function changeTiling(multiplier) {
+        if (!originalImg) return;
+        if (multiplier === currentTileMultiplier) return;
+
+        currentTileMultiplier = multiplier;
+        tiledImg = createTiledPattern(currentTileMultiplier);
+        tiledPatternWidth = patternWidth * currentTileMultiplier;
+        tiledPatternHeight = patternHeight * currentTileMultiplier;
+        autoFitWrapProducts();
+
+        if (!tiledImg || tiledPatternWidth === 0 || tiledPatternHeight === 0) {
+            showToast('Could not build tiled preview from this image', 2500);
+            return;
+        }
+        updatePreviews();
+        regenerateAllCanvases();
+        renderProductGrid();
+        showToast(`✨ Using ${currentTileMultiplier}x tiling ✨`, 1500);
+    }
+
+    function calculatePerfectSeamlessScale(product) {
+        if (!patternWidth || !patternHeight) return 1;
+
+        const axis = getSeamAxis(product);
+        let bestScale = 1;
+
+        for (let repeats = 1; repeats <= 24; repeats++) {
+            const basis = axis === "horizontal" ? patternHeight : patternWidth;
+            const target = axis === "horizontal" ? product.h : product.w;
+            const candidateScale = target / (basis * repeats);
+            if (candidateScale >= 0.005 && candidateScale <= 4.0) {
+                bestScale = candidateScale;
+                break;
+            }
+        }
+        return bestScale;
+    }
+
+    function autoFitWrapProducts() {
+        if (!originalImg || !tiledImg) return;
+        for (let i = 0; i < products.length; i++) {
+            if (products[i].type === "wrap") {
+                scales[i] = calculatePerfectSeamlessScale(products[i]);
+            }
+        }
+    }
+
+    function applyPerfectSeamlessFit(productIndex) {
+        const product = products[productIndex];
+        if (product.type !== "wrap") {
+            showToast(`📄 ${product.name} is flat - use slider to adjust scale`, 2000);
+            return scales[productIndex];
+        }
+
+        const perfectScale = calculatePerfectSeamlessScale(product);
+        scales[productIndex] = perfectScale;
+        updateProductCanvas(productIndex);
+
+        const metrics = getWrapRepeatMetrics(product, perfectScale);
+        const repeats = metrics.seamAxis === "horizontal" ? metrics.repeatsY : metrics.repeatsX;
+        const scalePercent = (metrics.effectiveScale * 100).toFixed(1);
+
+        showToast(`✨ ${product.name}: ${repeats} repeat(s) across at ${scalePercent}%`, 2500);
+        renderProductGrid();
+        return perfectScale;
+    }
+
+    function applyPerfectSeamlessToSelected() {
+        let count = 0;
+        for (let i = 0; i < products.length; i++) {
+            if (selected[i] && products[i].type === "wrap") {
+                applyPerfectSeamlessFit(i);
+                count++;
+            }
+        }
+        showToast(count ? `✨ Seamless wrap fit applied to ${count} product(s)!` : `✨ Select wrap products first`, 2000);
+    }
+
+    function getWrapRepeatCount(product, requestedScale) {
+        const metrics = getWrapRepeatMetrics(product, requestedScale);
+        return metrics.seamAxis === "horizontal" ? metrics.repeatsY : metrics.repeatsX;
+    }
+
+    function getScaleForWrapRepeats(product, repeatCount) {
+        if (!patternWidth || !patternHeight) return 1;
+        const axis = getSeamAxis(product);
+        const basis = axis === "horizontal" ? patternHeight : patternWidth;
+        const target = axis === "horizontal" ? product.h : product.w;
+        const count = Math.max(1, Math.min(30, Math.round(repeatCount || 1)));
+        return Math.max(0.005, Math.min(4.0, target / Math.max(1, basis * count)));
+    }
+
+
+function getWrapRepeatMetrics(product, requestedScale) {
+        const targetW = product.w;
+        const targetH = product.h;
+        const seamAxis = getSeamAxis(product);
+
+        if (!patternWidth || !patternHeight) {
+            return {
+                repeatsX: 1,
+                repeatsY: 1,
+                repeats: 1,
+                effectiveScale: requestedScale || 1,
+                tileW: Math.max(1, targetW),
+                tileH: Math.max(1, targetH),
+                seamAxis
+            };
+        }
+
+        const safeScale = Math.max(0.005, Math.min(4.0, requestedScale || 1));
+
+        if (seamAxis === "horizontal") {
+            const idealRepeatsY = targetH / Math.max(1, patternHeight * safeScale);
+            const repeatsY = Math.max(1, Math.min(24, Math.round(idealRepeatsY)));
+            const tileH = targetH / repeatsY;
+            const effectiveScale = tileH / patternHeight;
+            const tileW = patternWidth * effectiveScale;
+            const repeatsX = Math.max(1, Math.ceil(targetW / Math.max(1, tileW)));
+
+            return {
+                repeatsX,
+                repeatsY,
+                repeats: repeatsY,
+                effectiveScale,
+                tileW,
+                tileH,
+                seamAxis
+            };
+        }
+
+        const idealRepeatsX = targetW / Math.max(1, patternWidth * safeScale);
+        const repeatsX = Math.max(1, Math.min(24, Math.round(idealRepeatsX)));
+        const tileW = targetW / repeatsX;
+        const effectiveScale = tileW / patternWidth;
+        const tileH = patternHeight * effectiveScale;
+        const repeatsY = Math.max(1, Math.ceil(targetH / Math.max(1, tileH)));
+
+        return {
+            repeatsX,
+            repeatsY,
+            repeats: repeatsX,
+            effectiveScale,
+            tileW,
+            tileH,
+            seamAxis
+        };
+    }
+
+function drawPattern(ctx, targetW, targetH, scale, useTiled, product = null) {
+        if (!originalImg || patternWidth <= 0 || patternHeight <= 0) return;
+
+        ctx.clearRect(0, 0, targetW, targetH);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+
+        if (useTiled && product) {
+            const metrics = getWrapRepeatMetrics(product, scale);
+            const tileW = metrics.tileW;
+            const tileH = metrics.tileH;
+
+            if (metrics.seamAxis === "horizontal") {
+                const cols = Math.ceil(targetW / tileW) + 2;
+                const xOffset = -((cols * tileW) - targetW) / 2;
+                for (let row = 0; row < metrics.repeatsY; row++) {
+                    for (let col = 0; col < cols; col++) {
+                        ctx.drawImage(
+                            originalImg,
+                            Math.round(xOffset + col * tileW),
+                            Math.round(row * tileH),
+                            Math.ceil(tileW),
+                            Math.ceil(tileH)
+                        );
+                    }
+                }
+                return;
+            }
+
+            const rows = Math.ceil(targetH / tileH) + 2;
+            const yOffset = -((rows * tileH) - targetH) / 2;
+
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < metrics.repeatsX; col++) {
+                    ctx.drawImage(
+                        originalImg,
+                        Math.round(col * tileW),
+                        Math.round(yOffset + row * tileH),
+                        Math.ceil(tileW),
+                        Math.ceil(tileH)
+                    );
+                }
+            }
+            return;
+        }
+
+        const tileW = Math.max(1, Math.round(patternWidth * scale));
+        const tileH = Math.max(1, Math.round(patternHeight * scale));
+        const cols = Math.ceil(targetW / tileW) + 2;
+        const rows = Math.ceil(targetH / tileH) + 2;
+
+        for (let row = -1; row < rows - 1; row++) {
+            for (let col = -1; col < cols - 1; col++) {
+                ctx.drawImage(
+                    originalImg,
+                    Math.round(col * tileW),
+                    Math.round(row * tileH),
+                    tileW, tileH
+                );
+            }
+        }
+    }
+
+    function regenerateAllCanvases() {
+        if (!originalImg) return;
+        productCanvases = [];
+        for (let i = 0; i < products.length; i++) {
+            const p = products[i];
+            const canvas = document.createElement('canvas');
+            canvas.width = p.w;
+            canvas.height = p.h;
+            canvas.style.imageRendering = 'high-quality';
+            const ctx = canvas.getContext('2d');
+            const useTiled = (p.type === "wrap");
+            drawPattern(ctx, p.w, p.h, getRenderScale(p, i), useTiled, p);
+            productCanvases.push(canvas);
+        }
+    }
+
+    function updateProductCanvas(index) {
+        if (!originalImg) return;
+        const p = products[index];
+        const canvas = document.createElement('canvas');
+        canvas.width = p.w;
+        canvas.height = p.h;
+        const ctx = canvas.getContext('2d');
+        const useTiled = (p.type === "wrap");
+        drawPattern(ctx, p.w, p.h, getRenderScale(p, index), useTiled, p);
+        productCanvases[index] = canvas;
+    }
+
+    function showTileZoom() {
+        if (!tiledImg) return;
+
+        zoomCanvas.width = Math.min(1000, tiledPatternWidth);
+        zoomCanvas.height = Math.min(1000, tiledPatternHeight);
+        const ctx = zoomCanvas.getContext('2d');
+        ctx.clearRect(0, 0, zoomCanvas.width, zoomCanvas.height);
+        ctx.fillStyle = '#0a0a1a';
+        ctx.fillRect(0, 0, zoomCanvas.width, zoomCanvas.height);
+
+        const scale = Math.min(zoomCanvas.width / tiledPatternWidth, zoomCanvas.height / tiledPatternHeight);
+        const drawW = tiledPatternWidth * scale;
+        const drawH = tiledPatternHeight * scale;
+        const drawX = (zoomCanvas.width - drawW) / 2;
+        const drawY = (zoomCanvas.height - drawH) / 2;
+
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        drawVirtualTile(ctx, drawX, drawY, drawW, drawH);
+        drawSeamGuides(ctx, drawX, drawY, drawW, drawH, drawW / currentTileMultiplier, drawH / currentTileMultiplier);
+
+        zoomInfo.innerHTML = `✨ ${currentTileMultiplier}x tiled pattern - ${tiledPatternWidth}x${tiledPatternHeight}px ✨`;
+        currentZoomMode = 'tile';
+        currentZoomProductIndex = -1;
+        zoomModal.classList.remove('hidden');
+    }
+
+    function formatDimension(px) {
+        if (displayUnit === "inches") return (px / DPI).toFixed(2) + '"';
+        return px + 'px';
+    }
+
+    function renderProductGrid() {
+        if (!originalImg) {
+            productGrid.innerHTML = '<div style="color:#aaa; text-align:center; padding:40px;">✧ upload your seamless pattern to begin ✧</div>';
+            return;
+        }
+
+        let html = '';
+        for (let i = 0; i < products.length; i++) {
+            const p = products[i];
+            const canvas = productCanvases[i];
+            if (!canvas) continue;
+
+            const thumb = document.createElement('canvas');
+            thumb.width = THUMB_RENDER_SIZE;
+            thumb.height = THUMB_RENDER_SIZE;
+            const tCtx = thumb.getContext('2d');
+            tCtx.clearRect(0, 0, thumb.width, thumb.height);
+            tCtx.imageSmoothingEnabled = true;
+            tCtx.imageSmoothingQuality = 'high';
+            tCtx.fillStyle = '#0a0a1a';
+            tCtx.fillRect(0, 0, thumb.width, thumb.height);
+
+            drawProductPreviewThumb(tCtx, canvas, p, thumb.width, thumb.height, 20);
+
+            let isPerfectWrap = false;
+            let repeats = 0;
+            let displayedScale = getRenderScale(p, i);
+            if (p.type === "wrap") {
+                const metrics = getWrapRepeatMetrics(p, scales[i]);
+                repeats = metrics.seamAxis === "horizontal" ? metrics.repeatsY : metrics.repeatsX;
+                displayedScale = metrics.effectiveScale;
+                isPerfectWrap = true;
+            }
+
+            const seamLabel = getSeamAxis(p) === "horizontal" ? `${repeats} down` : `${repeats} across`;
+            const perfectBadge = isPerfectWrap ? `<div class="perfect-fit-badge">✨ ${seamLabel}</div>` : '';
+            const wrapBadge = p.type === "wrap" ? `<div class="wrap-badge">🌀 wrap</div>` : `<div class="wrap-badge" style="background: rgba(100,100,100,0.8);">📄 flat</div>`;
+            const dimText = `${formatDimension(p.w)} × ${formatDimension(p.h)}`;
+            const checked = selected[i] ? 'checked' : '';
+            const selectedClass = selected[i] ? 'selected' : '';
+            const showRename = p.isCustom ? `<div class="rename-btn" data-idx="${i}">✎</div>` : '';
+            const showDelete = p.isCustom ? `<div class="delete-btn" data-idx="${i}">✖</div>` : '';
+            const showRotate = p.type === "wrap" && p.rotatable ? `<div class="rotate-btn" data-idx="${i}" title="rotate wrap">↻</div>` : '';
+
+            const wrapRepeatValue = p.type === "wrap" ? getWrapRepeatCount(p, getRenderScale(p, i)) : 0;
+            const sliderLabel = p.type === "wrap"
+                ? `${(displayedScale * 100).toFixed(1)}% · ${wrapRepeatValue} repeat${wrapRepeatValue === 1 ? '' : 's'}`
+                : `${(displayedScale * 100).toFixed(0)}%`;
+            const scaleSliderHtml = p.type === "wrap"
+                ? `<div class="scale-slider-container"><span class="scale-value" style="display:block; width:100%; text-align:center;">${sliderLabel} · auto-fit</span></div>`
+                : (p.sliderDisabled
+                    ? `<div class="scale-slider-container"><span class="scale-value" style="display:block; width:100%; text-align:center;">fixed ${(displayedScale * 100).toFixed(0)}% scale · no slider</span></div>`
+                    : `
+                <div class="scale-slider-container">
+                    <input type="range" class="individual-scale-slider" data-idx="${i}" min="0.10" max="1.00" step="0.01" value="${scales[i]}">
+                    <span class="scale-value">${sliderLabel}</span>
+                </div>
+            `);
+
+            html += `
+                <div class="product-card ${selectedClass}" data-idx="${i}">
+                    <input type="checkbox" class="product-checkbox" data-idx="${i}" ${checked}>
+                    ${showDelete}
+                    ${showRename}
+                    ${showRotate}
+                    ${perfectBadge}
+                    ${wrapBadge}
+                    <img src="${thumb.toDataURL('image/png')}">
+                    <div class="product-name" data-idx="${i}">${p.name}</div>
+                    <div class="product-dim">${dimText}</div>
+                    <div style="display:flex; gap:6px; margin-top:8px;">
+                        <button class="preview-product-btn" type="button" data-idx="${i}" style="flex:1; padding:8px 10px; font-size:11px;">preview</button>
+                    </div>
+                    ${scaleSliderHtml}
+                </div>
+            `;
+        }
+
+        productGrid.innerHTML = html;
+
+        document.querySelectorAll('.individual-scale-slider').forEach(slider => {
+            const applySliderValue = (e, rerender = false) => {
+                e.stopPropagation();
+                const idx = parseInt(slider.dataset.idx);
+                const val = parseFloat(slider.value);
+                if (products[idx].type === "wrap") {
+                    scales[idx] = Math.max(0.10, Math.min(3.00, val));
+                } else {
+                    scales[idx] = Math.max(0.10, Math.min(1.00, val));
+                }
+                updateProductCanvas(idx);
+                const parent = slider.closest('.scale-slider-container');
+                if (parent) {
+                    const percentSpan = parent.querySelector('.scale-value');
+                    if (percentSpan) {
+                        if (products[idx].type === "wrap") {
+                            const metrics = getWrapRepeatMetrics(products[idx], scales[idx]);
+                            const repeatCount = (metrics.seamAxis === 'horizontal' ? metrics.repeatsY : metrics.repeatsX);
+                            percentSpan.textContent = `${(metrics.effectiveScale * 100).toFixed(1)}% · ${repeatCount} repeat${repeatCount === 1 ? '' : 's'}`;
+                        } else {
+                            percentSpan.textContent = Math.round(val * 100) + '%';
+                        }
+                    }
+                }
+                if (rerender) renderProductGrid();
+            };
+            slider.oninput = (e) => applySliderValue(e, false);
+            slider.onchange = (e) => applySliderValue(e, true);
+        });
+
+        document.querySelectorAll('.product-card').forEach(card => {
+            card.onclick = (e) => {
+                if (e.target.classList.contains('product-checkbox') || 
+                    e.target.classList.contains('delete-btn') ||
+                    e.target.classList.contains('rename-btn') ||
+                    e.target.classList.contains('rotate-btn') ||
+                    e.target.classList.contains('individual-scale-slider') ||
+                    e.target.classList.contains('preview-product-btn') ||
+                    e.target.classList.contains('wrap-fit-btn')) return;
+                const idx = parseInt(card.dataset.idx);
+                showProductZoom(idx);
+            };
+        });
+
+        document.querySelectorAll('.product-name').forEach(name => {
+            name.onclick = (e) => {
+                e.stopPropagation();
+                const idx = parseInt(name.dataset.idx);
+                if (products[idx].isCustom) {
+                    renameIndex = idx;
+                    renameInput.value = products[idx].name;
+                    renameModal.classList.remove('hidden');
+                }
+            };
+        });
+
+        document.querySelectorAll('.product-checkbox').forEach(cb => {
+            cb.onchange = (e) => {
+                e.stopPropagation();
+                const idx = parseInt(cb.dataset.idx);
+                selected[idx] = cb.checked;
+                const card = cb.closest('.product-card');
+                if (cb.checked) card.classList.add('selected');
+                else card.classList.remove('selected');
+                updateCounts();
+            };
+        });
+
+        document.querySelectorAll('.preview-product-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                const idx = parseInt(btn.dataset.idx);
+                showProductZoom(idx);
+            };
+        });
+
+
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                const idx = parseInt(btn.dataset.idx);
+                if (confirm(`Do you want to delete ${products[idx].name}?`)) {
+                    products.splice(idx, 1);
+                    selected.splice(idx, 1);
+                    scales.splice(idx, 1);
+                    if (originalImg) {
+                        regenerateAllCanvases();
+                        renderProductGrid();
+                    }
+                    updateCounts();
+                }
+            };
+        });
+
+        document.querySelectorAll('.rename-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                const idx = parseInt(btn.dataset.idx);
+                if (products[idx].isCustom) {
+                    renameIndex = idx;
+                    renameInput.value = products[idx].name;
+                    renameModal.classList.remove('hidden');
+                }
+            };
+        });
+
+        document.querySelectorAll('.rotate-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                const idx = parseInt(btn.dataset.idx);
+                const p = products[idx];
+                const oldW = p.w;
+                p.w = p.h;
+                p.h = oldW;
+                p.wIn = +(p.w / DPI).toFixed(3);
+                p.hIn = +(p.h / DPI).toFixed(3);
+                if (originalImg) {
+                    scales[idx] = calculatePerfectSeamlessScale(p);
+                    updateProductCanvas(idx);
+                    renderProductGrid();
+                }
+                const seamAxis = getSeamAxis(p);
+                showToast(`↻ ${p.name} rotated · ${seamAxis === 'horizontal' ? 'top/bottom' : 'left/right'} seam`, 2000);
+            };
+        });
+
+        updateCounts();
+    }
+
+    function updateCounts() {
+        const count = selected.filter(v => v).length;
+        selectedCountSpan.innerText = `${count}/${products.length}`;
+        if (originalImg) downloadBtn.disabled = (count === 0);
+    }
+
+    function showProductZoom(idx) {
+        if (!productCanvases[idx]) return;
+
+        const canvas = productCanvases[idx];
+        const prod = products[idx];
+
+        zoomCanvas.width = canvas.width;
+        zoomCanvas.height = canvas.height;
+        const ctx = zoomCanvas.getContext('2d');
+        ctx.clearRect(0, 0, zoomCanvas.width, zoomCanvas.height);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(canvas, 0, 0);
+
+        let repeatInfo = '';
+        let zoomScale = getRenderScale(prod, idx);
+        if (prod.type === "wrap") {
+            const metrics = getWrapRepeatMetrics(prod, scales[idx]);
+            const repeatCount = metrics.seamAxis === "horizontal" ? metrics.repeatsY : metrics.repeatsX;
+            const seamText = metrics.seamAxis === "horizontal" ? 'top/bottom seamless' : 'left/right seamless';
+            zoomScale = metrics.effectiveScale;
+            repeatInfo = `<br>✨ ${repeatCount} seamless repeat(s) · ${seamText} ✨`;
+        }
+
+        zoomInfo.innerHTML = `${prod.name} · ${formatDimension(prod.w)} × ${formatDimension(prod.h)} · scale: ${(zoomScale*100).toFixed(1)}%${repeatInfo}`;
+        currentZoomMode = 'product';
+        currentZoomProductIndex = idx;
+        zoomModal.classList.remove('hidden');
+    }
+
+    function loadAssetImageFromCandidates(paths) {
+        return new Promise((resolve, reject) => {
+            let index = 0;
+            function tryNext() {
+                if (index >= paths.length) {
+                    reject(new Error('Could not load mug mockup assets.'));
+                    return;
+                }
+                const src = paths[index++];
+                const img = new Image();
+                img.decoding = 'async';
+                img.onload = () => resolve(img);
+                img.onerror = tryNext;
+                img.src = src;
+            }
+            tryNext();
+        });
+    }
+
+    async function showMugMockup(idx) {
+        try {
+            const designCanvas = productCanvases[idx];
+            if (!designCanvas) {
+                showToast('Pattern preview not ready yet');
+                return;
+            }
+
+            const [base, mask, shading] = await Promise.all([
+                loadAssetImageFromCandidates([
+                    './mug_base_simple_realistic.png',
+                    'mug_base_simple_realistic.png',
+                    './mockups/mug_base_simple_realistic.png',
+                    'mockups/mug_base_simple_realistic.png'
+                ]),
+                loadAssetImageFromCandidates([
+                    './mug_mask_clean.png',
+                    'mug_mask_clean.png',
+                    './mockups/mug_mask_clean.png',
+                    'mockups/mug_mask_clean.png'
+                ]),
+                loadAssetImageFromCandidates([
+                    './mug_shading_overlay.png',
+                    'mug_shading_overlay.png',
+                    './mockups/mug_shading_overlay.png',
+                    'mockups/mug_shading_overlay.png'
+                ])
+            ]);
+
+            const canvas = zoomCanvas;
+            canvas.width = base.naturalWidth || base.width;
+            canvas.height = base.naturalHeight || base.height;
+
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+
+            // draw the full mug first so the whole mug remains visible
+            ctx.drawImage(base, 0, 0, canvas.width, canvas.height);
+
+            // mockup-only scale so the pattern looks nicer on the mug
+            const mockupScale = 0.5;
+            const tileCanvas = document.createElement('canvas');
+            tileCanvas.width = Math.max(1, Math.round(designCanvas.width * mockupScale));
+            tileCanvas.height = Math.max(1, Math.round(designCanvas.height * mockupScale));
+
+            const tileCtx = tileCanvas.getContext('2d');
+            tileCtx.imageSmoothingEnabled = true;
+            tileCtx.imageSmoothingQuality = 'high';
+            tileCtx.clearRect(0, 0, tileCanvas.width, tileCanvas.height);
+            tileCtx.drawImage(designCanvas, 0, 0, tileCanvas.width, tileCanvas.height);
+
+            // create a masked repeating pattern layer
+            const patternLayer = document.createElement('canvas');
+            patternLayer.width = canvas.width;
+            patternLayer.height = canvas.height;
+
+            const pctx = patternLayer.getContext('2d');
+            pctx.imageSmoothingEnabled = true;
+            pctx.imageSmoothingQuality = 'high';
+
+            const pattern = pctx.createPattern(tileCanvas, 'repeat');
+            pctx.save();
+            pctx.fillStyle = pattern;
+            pctx.fillRect(0, 0, patternLayer.width, patternLayer.height);
+            pctx.restore();
+
+            pctx.globalCompositeOperation = 'destination-in';
+            pctx.drawImage(mask, 0, 0, patternLayer.width, patternLayer.height);
+
+            // place the printable design on the mug
+            ctx.drawImage(patternLayer, 0, 0, canvas.width, canvas.height);
+
+            // shading on top for realism
+            ctx.globalCompositeOperation = 'multiply';
+            ctx.drawImage(shading, 0, 0, canvas.width, canvas.height);
+            ctx.globalCompositeOperation = 'source-over';
+
+            zoomInfo.innerHTML = `Coffee Mug mock-up · full mug preview · export remains ${formatDimension(products[idx].w)} × ${formatDimension(products[idx].h)}`;
+            currentZoomMode = 'mug-mockup';
+            currentZoomProductIndex = idx;
+            zoomModal.classList.remove('hidden');
+        } catch (err) {
+            console.error('Mug mockup failed:', err);
+            showToast('Mug mock-up assets not found — showing flat preview instead', 3500);
+            showProductZoom(idx);
+        }
+    }
+
+
+    function updateSvgOptionState() {
+        if (outputFormatSelect.value !== 'png' && outputFormatSelect.value !== 'jpeg') {
+            outputFormatSelect.value = 'png';
+        }
+    }
+
+    function readFileAsText(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsText(file);
+        });
+    }
+
+    function normalizeSvgMarkup(svgText) {
+        let text = String(svgText || '').trim();
+        if (!text) throw new Error('The SVG file appears to be empty.');
+
+        text = text
+            .replace(/<\?xml[\s\S]*?\?>/gi, '')
+            .replace(/<!doctype[\s\S]*?>/gi, '')
+            .replace(/<script[\s\S]*?<\/script>/gi, '')
+            .replace(/<foreignObject[\s\S]*?<\/foreignObject>/gi, '')
+            .trim();
+
+        if (!/^<svg[\s>]/i.test(text)) {
+            throw new Error('That file is not a valid SVG.');
+        }
+
+        const viewBoxMatch = text.match(/viewBox\s*=\s*["']\s*([\d.+-]+)[ ,]+([\d.+-]+)[ ,]+([\d.+-]+)[ ,]+([\d.+-]+)\s*["']/i);
+        const widthMatch = text.match(/\bwidth\s*=\s*["']\s*([\d.+-]+)([a-z%]*)\s*["']/i);
+        const heightMatch = text.match(/\bheight\s*=\s*["']\s*([\d.+-]+)([a-z%]*)\s*["']/i);
+
+        let width = 0;
+        let height = 0;
+
+        if (viewBoxMatch) {
+            width = parseFloat(viewBoxMatch[3]) || 0;
+            height = parseFloat(viewBoxMatch[4]) || 0;
+        }
+        if ((!width || !height) && widthMatch && heightMatch && widthMatch[2] !== '%' && heightMatch[2] !== '%') {
+            width = width || parseFloat(widthMatch[1]) || 0;
+            height = height || parseFloat(heightMatch[1]) || 0;
+        }
+        if (!width || !height) {
+            width = width || 1000;
+            height = height || 1000;
+        }
+
+        text = text.replace(/<svg\b([^>]*)>/i, (full, attrs) => {
+            let nextAttrs = attrs;
+            if (!/xmlns\s*=/.test(nextAttrs)) nextAttrs += ' xmlns="http://www.w3.org/2000/svg"';
+            if (!/xmlns:xlink\s*=/.test(nextAttrs)) nextAttrs += ' xmlns:xlink="http://www.w3.org/1999/xlink"';
+            if (/\bwidth\s*=/.test(nextAttrs)) {
+                nextAttrs = nextAttrs.replace(/\bwidth\s*=\s*["'][^"']*["']/i, ` width="${width}"`);
+            } else {
+                nextAttrs += ` width="${width}"`;
+            }
+            if (/\bheight\s*=/.test(nextAttrs)) {
+                nextAttrs = nextAttrs.replace(/\bheight\s*=\s*["'][^"']*["']/i, ` height="${height}"`);
+            } else {
+                nextAttrs += ` height="${height}"`;
+            }
+            if (!/\bviewBox\s*=/.test(nextAttrs)) {
+                nextAttrs += ` viewBox="0 0 ${width} ${height}"`;
+            }
+            return `<svg${nextAttrs}>`;
+        });
+
+        return { text, width, height };
+    }
+
+    function loadHtmlImage(src) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.decoding = 'async';
+            img.crossOrigin = 'anonymous';
+            img.onload = () => resolve(img);
+            img.onerror = () => reject(new Error('Could not load that image file.'));
+            img.src = src;
+        });
+    }
+
+    function blobToDataUrl(blob) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    }
+
+    function dataUrlToBlob(dataUrl) {
+        const parts = dataUrl.split(',');
+        const mimeMatch = parts[0].match(/:(.*?);/);
+        const mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
+        const binary = atob(parts[1]);
+        const len = binary.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+        return new Blob([bytes], { type: mime });
+    }
+
+    const PNG_DPI_PPM = Math.round(DPI / 0.0254);
+    const CRC32_TABLE = (() => {
+        const table = new Uint32Array(256);
+        for (let i = 0; i < 256; i++) {
+            let c = i;
+            for (let j = 0; j < 8; j++) {
+                c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+            }
+            table[i] = c >>> 0;
+        }
+        return table;
+    })();
+
+    function crc32(bytes) {
+        let crc = 0xFFFFFFFF;
+        for (let i = 0; i < bytes.length; i++) {
+            crc = CRC32_TABLE[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8);
+        }
+        return (crc ^ 0xFFFFFFFF) >>> 0;
+    }
+
+    function buildPngPhysChunk(ppm) {
+        const typeBytes = new Uint8Array([112, 72, 89, 115]); // pHYs
+        const data = new Uint8Array(9);
+        const view = new DataView(data.buffer);
+        view.setUint32(0, ppm, false);
+        view.setUint32(4, ppm, false);
+        data[8] = 1;
+
+        const chunk = new Uint8Array(4 + 4 + data.length + 4);
+        const chunkView = new DataView(chunk.buffer);
+        chunkView.setUint32(0, data.length, false);
+        chunk.set(typeBytes, 4);
+        chunk.set(data, 8);
+
+        const crcInput = new Uint8Array(typeBytes.length + data.length);
+        crcInput.set(typeBytes, 0);
+        crcInput.set(data, typeBytes.length);
+        chunkView.setUint32(8 + data.length, crc32(crcInput), false);
+        return chunk;
+    }
+
+    async function applyPngDpi(blob, dpi = DPI) {
+        const bytes = new Uint8Array(await blob.arrayBuffer());
+        const signatureLength = 8;
+        const physChunk = buildPngPhysChunk(Math.round(dpi / 0.0254));
+        let offset = signatureLength;
+        let insertAt = signatureLength;
+        let replaced = false;
+        const chunks = [];
+
+        while (offset + 8 <= bytes.length) {
+            const length = new DataView(bytes.buffer, offset, 4).getUint32(0, false);
+            const type = String.fromCharCode(bytes[offset + 4], bytes[offset + 5], bytes[offset + 6], bytes[offset + 7]);
+            const chunkEnd = offset + 12 + length;
+            if (chunkEnd > bytes.length) break;
+
+            if (type === 'IHDR') {
+                chunks.push(bytes.slice(offset, chunkEnd));
+                chunks.push(physChunk);
+                insertAt = chunkEnd;
+                replaced = true;
+            } else if (type !== 'pHYs') {
+                chunks.push(bytes.slice(offset, chunkEnd));
+            }
+            offset = chunkEnd;
+        }
+
+        if (!replaced) {
+            return blob;
+        }
+
+        const out = new Uint8Array(signatureLength + chunks.reduce((sum, chunk) => sum + chunk.length, 0));
+        out.set(bytes.slice(0, signatureLength), 0);
+        let outOffset = signatureLength;
+        for (const chunk of chunks) {
+            out.set(chunk, outOffset);
+            outOffset += chunk.length;
+        }
+        return new Blob([out], { type: 'image/png' });
+    }
+
+    async function applyJpegDpi(blob, dpi = DPI) {
+        const bytes = new Uint8Array(await blob.arrayBuffer());
+        if (bytes.length < 4 || bytes[0] !== 0xFF || bytes[1] !== 0xD8) return blob;
+
+        let offset = 2;
+        while (offset + 4 < bytes.length && bytes[offset] === 0xFF) {
+            const marker = bytes[offset + 1];
+            if (marker === 0xDA || marker === 0xD9) break;
+            const segmentLength = (bytes[offset + 2] << 8) | bytes[offset + 3];
+            if (segmentLength < 2 || offset + 2 + segmentLength > bytes.length) break;
+
+            if (marker === 0xE0) {
+                const jfif = String.fromCharCode(bytes[offset + 4], bytes[offset + 5], bytes[offset + 6], bytes[offset + 7], bytes[offset + 8]);
+                if (jfif === 'JFIF\u0000') {
+                    bytes[offset + 11] = 1;
+                    bytes[offset + 12] = (dpi >> 8) & 0xFF;
+                    bytes[offset + 13] = dpi & 0xFF;
+                    bytes[offset + 14] = (dpi >> 8) & 0xFF;
+                    bytes[offset + 15] = dpi & 0xFF;
+                    return new Blob([bytes], { type: 'image/jpeg' });
+                }
+            }
+            offset += 2 + segmentLength;
+        }
+        return blob;
+    }
+
+    async function canvasToBlobSafe(canvas, type, quality) {
+        const blob = await new Promise((resolve) => {
+            try {
+                canvas.toBlob(resolve, type, quality);
+            } catch (err) {
+                resolve(null);
+            }
+        });
+        if (blob) return blob;
+
+        const mime = type || 'image/png';
+        const fallbackUrl = canvas.toDataURL(mime, quality);
+        return dataUrlToBlob(fallbackUrl);
+    }
+
+    function isAppleMobileSafari() {
+        const ua = navigator.userAgent || '';
+        const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        const isSafari = /Safari/i.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|Chrome|Android/i.test(ua);
+        return isIOS && isSafari;
+    }
+
+
+    function updateDownloadUi() {
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        if (isIOS) {
+            downloadBtn.textContent = '📦 save selected designs';
+            downloadHint.textContent = 'iPad/iPhone: tap this, then choose “Save to Files”. Multiple selected designs are packed into one ZIP when supported.';
+        } else {
+            downloadBtn.textContent = '📦 download selected designs (ZIP)';
+            downloadHint.textContent = 'PNG exports keep a transparent background.';
+        }
+    }
+
+    async function triggerDownload(blob, filename) {
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        const mime = blob.type || 'application/octet-stream';
+
+        if (isIOS) {
+            const file = new File([blob], filename, { type: mime });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({ files: [file] });
+                return;
+            }
+
+            const url = URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = filename;
+            anchor.target = '_blank';
+            anchor.rel = 'noopener';
+            document.body.appendChild(anchor);
+            anchor.click();
+            document.body.removeChild(anchor);
+            setTimeout(() => URL.revokeObjectURL(url), 8000);
+            showToast('Open the share sheet and choose Save to Files.', 2800);
+            return;
+        }
+
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = filename;
+        anchor.rel = 'noopener';
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+    }
+
+    function escapeXml(value) {
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&apos;');
+    }
+
+    function buildSvgPatternMarkup(product, requestedScale) {
+        if (!originalIsSvg || !originalSourceDataUrl || !patternWidth || !patternHeight) {
+            throw new Error('SVG export is only available when the uploaded pattern is an SVG file.');
+        }
+
+        const width = product.w;
+        const height = product.h;
+        let tileW, tileH, offsetX = 0, offsetY = 0;
+
+        if (product.type === 'wrap') {
+            const metrics = getWrapRepeatMetrics(product, requestedScale);
+            tileW = metrics.tileW;
+            tileH = metrics.tileH;
+            if (metrics.seamAxis === 'horizontal') {
+                const cols = Math.ceil(width / tileW) + 2;
+                offsetX = -((cols * tileW) - width) / 2;
+            } else {
+                const rows = Math.ceil(height / tileH) + 2;
+                offsetY = -((rows * tileH) - height) / 2;
+            }
+        } else {
+            const safeScale = Math.max(0.005, Math.min(4.0, requestedScale || 1));
+            tileW = patternWidth * safeScale;
+            tileH = patternHeight * safeScale;
+            offsetX = -tileW;
+            offsetY = -tileH;
+        }
+
+        return `<?xml version="1.0" encoding="UTF-8"?>
+` +
+            `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+` +
+            `  <defs>
+` +
+            `    <pattern id="patternFill" patternUnits="userSpaceOnUse" width="${tileW}" height="${tileH}" x="${offsetX}" y="${offsetY}">
+` +
+            `      <image href="${originalSourceDataUrl}" xlink:href="${originalSourceDataUrl}" width="${tileW}" height="${tileH}" preserveAspectRatio="none" />
+` +
+            `    </pattern>
+` +
+            `  </defs>
+` +
+            `  <rect width="${width}" height="${height}" fill="#ffffff" />\n  <rect width="${width}" height="${height}" fill="url(#patternFill)" />
+` +
+            `</svg>`;
+    }
+
+    function showToast(msg, duration = 2500) {
+        toast.textContent = msg;
+        toast.classList.remove('hidden');
+        setTimeout(() => toast.classList.add('hidden'), duration);
+    }
+
+    async function loadImage(file) {
+        if (currentImageObjectUrl) {
+            try { URL.revokeObjectURL(currentImageObjectUrl); } catch (e) {}
+            currentImageObjectUrl = '';
+        }
+
+        sourceFileMime = file.type || '';
+        sourceFileName = file.name || 'pattern';
+        originalIsSvg = false;
+        originalSvgText = '';
+        originalSourceDataUrl = '';
+
+        let imageSrc = '';
+        let objectUrl = '';
+        let forcedWidth = 0;
+        let forcedHeight = 0;
+
+        try {
+            objectUrl = URL.createObjectURL(file);
+            currentImageObjectUrl = objectUrl;
+            imageSrc = objectUrl;
+
+            const img = await loadHtmlImage(imageSrc);
+            originalImg = img;
+            patternWidth = Math.round(img.naturalWidth || img.width || forcedWidth || 0);
+            patternHeight = Math.round(img.naturalHeight || img.height || forcedHeight || 0);
+
+            if (!patternWidth || !patternHeight) {
+                throw new Error('This image has no usable size information.');
+            }
+
+            updateSvgOptionState();
+
+            const inchesWidth = (patternWidth / DPI).toFixed(2);
+            const inchesHeight = (patternHeight / DPI).toFixed(2);
+            sizeText.innerHTML = displayUnit === 'inches'
+                ? `${inchesWidth}" × ${inchesHeight}"`
+                : `${patternWidth} × ${patternHeight} px`;
+            statusText.innerHTML = '✧ ready ✧';
+
+            previewSection.style.display = 'block';
+            uploadBox.style.display = 'none';
+
+            currentTileMultiplier = 2;
+            tiledImg = createTiledPattern(currentTileMultiplier);
+            tiledPatternWidth = patternWidth * currentTileMultiplier;
+            tiledPatternHeight = patternHeight * currentTileMultiplier;
+            autoFitWrapProducts();
+
+            if (!tiledImg || tiledPatternWidth === 0 || tiledPatternHeight === 0) {
+                throw new Error('Could not build tiled preview from this image.');
+            }
+
+            updatePreviews();
+            regenerateAllCanvases();
+            renderProductGrid();
+
+            selectAllBtn.disabled = false;
+            deselectAllBtn.disabled = false;
+            downloadBtn.disabled = false;
+
+            showToast(`✧ Pattern loaded! ${patternWidth}x${patternHeight}px at 300 DPI ✧`, 3000);
+        } catch (err) {
+            if (objectUrl) {
+                try { URL.revokeObjectURL(objectUrl); } catch (e) {}
+                if (currentImageObjectUrl === objectUrl) currentImageObjectUrl = '';
+            }
+            throw err;
+        }
+    }
+
+    function removeImage() {
+        originalImg = null;
+        tiledImg = null;
+        patternWidth = 0;
+        patternHeight = 0;
+        tiledPatternWidth = 0;
+        tiledPatternHeight = 0;
+        productCanvases = [];
+        sourceFileMime = '';
+        sourceFileName = '';
+        originalIsSvg = false;
+        originalSvgText = '';
+        originalSourceDataUrl = '';
+        if (currentImageObjectUrl) {
+            try { URL.revokeObjectURL(currentImageObjectUrl); } catch (e) {}
+            currentImageObjectUrl = '';
+        }
+        updateSvgOptionState();
+        statusText.innerHTML = 'no image';
+        sizeText.innerHTML = '0x0';
+        tiledSizeText.innerHTML = '0x0';
+        previewSection.style.display = 'none';
+        uploadBox.style.display = 'block';
+        downloadBtn.disabled = true;
+        selectAllBtn.disabled = true;
+        deselectAllBtn.disabled = true;
+        renderProductGrid();
+        updateCounts();
+    }
+
+    async function exportCanvas(canvas) {
+        const format = outputFormatSelect.value;
+
+        if (format === 'jpeg') {
+            const exportCanvas = document.createElement('canvas');
+            exportCanvas.width = canvas.width;
+            exportCanvas.height = canvas.height;
+            const ctx = exportCanvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+            ctx.drawImage(canvas, 0, 0);
+            const jpegBlob = await canvasToBlobSafe(exportCanvas, 'image/jpeg', 0.95);
+            return applyJpegDpi(jpegBlob, DPI);
+        }
+
+        const pngBlob = await canvasToBlobSafe(canvas, 'image/png');
+        return applyPngDpi(pngBlob, DPI);
+    }
+
+    async function exportProductBlob(product, canvas, scaleValue) {
+        const format = outputFormatSelect.value;
+        return exportCanvas(canvas);
+    }
+
+    downloadBtn.onclick = async () => {
+        if (!originalImg) return;
+        const items = [];
+        for (let i = 0; i < products.length; i++) {
+            if (selected[i]) items.push({ index: i, name: products[i].name, canvas: productCanvases[i] });
+        }
+        if (items.length === 0) { alert('select at least one product'); return; }
+
+        const prefix = patternNameInput.value.trim() || 'pattern';
+        const safePrefix = prefix.replace(/[^a-z0-9_-]/gi, '_').toLowerCase();
+        const format = outputFormatSelect.value;
+        const ext = format === 'jpeg' ? 'jpg' : format;
+
+        showToast(`✨ Preparing ${format.toUpperCase()} design${items.length > 1 ? 's' : ''} at 300 DPI...`, 1500);
+        downloadBtn.disabled = true;
+
+        try {
+            if (items.length === 1) {
+                const item = items[0];
+                const blob = await exportProductBlob(products[item.index], item.canvas, getRenderScale(products[item.index], item.index));
+                const cleanName = item.name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+                await triggerDownload(blob, `${safePrefix}_${cleanName}.${ext}`);
+                showToast(`✅ Saved 1 design!`, 2000);
+            } else {
+                const zip = new JSZip();
+                for (let i = 0; i < items.length; i++) {
+                    const productIndex = items[i].index;
+                    const blob = await exportProductBlob(products[productIndex], items[i].canvas, getRenderScale(products[productIndex], productIndex));
+                    const cleanName = items[i].name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+                    zip.file(`${safePrefix}_${cleanName}.${ext}`, blob);
+                }
+                const zipBlob = await zip.generateAsync({ type: 'blob', mimeType: 'application/zip' });
+                await triggerDownload(zipBlob, `${safePrefix}.zip`);
+                showToast(`✅ Saved ${items.length} design(s)!`, 2000);
+            }
+        } catch (err) { alert('error: ' + err.message); }
+        finally { downloadBtn.disabled = false; }
+    };
+
+    uploadBox.onclick = () => fileInput.click();
+    fileInput.onchange = async (e) => {
+        if (e.target.files[0]) {
+            try {
+                await loadImage(e.target.files[0]);
+            } catch (err) {
+                alert('Could not open that file. Please try PNG, JPG, or WEBP.');
+                console.error(err);
+            }
+        }
+        fileInput.value = '';
+    };
+    removeBtn.onclick = removeImage;
+    if (origPreviewClickable) origPreviewClickable.onclick = showTileZoom;
+    tiledPreviewClickable.onclick = showTileZoom;
+    openPreviewBtn.onclick = showTileZoom;
+    closeZoomBtn.onclick = () => zoomModal.classList.add('hidden');
+    zoomModal.onclick = (e) => { if (e.target === zoomModal) zoomModal.classList.add('hidden'); };
+    selectAllBtn.onclick = () => { for (let i = 0; i < selected.length; i++) selected[i] = true; if (originalImg) renderProductGrid(); else updateCounts(); };
+    deselectAllBtn.onclick = () => { for (let i = 0; i < selected.length; i++) selected[i] = false; if (originalImg) renderProductGrid(); else updateCounts(); };
+
+
+    document.querySelectorAll('.tile-option[data-tile]').forEach(btn => {
+        btn.onclick = () => {
+            const multiplier = parseInt(btn.dataset.tile);
+            if (multiplier === currentTileMultiplier) return;
+            document.querySelectorAll('.tile-option[data-tile]').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            changeTiling(multiplier);
+        };
+    });
+
+    
+    addCustomBtn.onclick = () => {
+        let wVal = parseFloat(customW.value);
+        let hVal = parseFloat(customH.value);
+        if (isNaN(wVal) || wVal <= 0 || isNaN(hVal) || hVal <= 0) {
+            alert('enter valid dimensions');
+            return;
+        }
+        let wPx, hPx;
+        if (displayUnit === 'inches') {
+            wPx = Math.round(wVal * DPI);
+            hPx = Math.round(hVal * DPI);
+        } else {
+            wPx = Math.round(wVal);
+            hPx = Math.round(hVal);
+        }
+        const wIn = (wPx / DPI).toFixed(2);
+        const hIn = (hPx / DPI).toFixed(2);
+        products.push({ 
+            name: `${wIn}"×${hIn}"`, 
+            w: wPx, 
+            h: hPx, 
+            type: "wrap", 
+            isCustom: true,
+            rotatable: false 
+        });
+        selected.push(true);
+
+        if (originalImg && tiledImg) {
+            const perfectScale = calculatePerfectSeamlessScale(products[products.length - 1]);
+            scales.push(perfectScale);
+        } else {
+            scales.push(1.0);
+        }
+
+        if (originalImg) {
+            regenerateAllCanvases();
+            renderProductGrid();
+        }
+        updateCounts();
+        showToast(`✧ Custom product added! Click name to rename ✧`, 2000);
+    };
+
+    renameSave.onclick = () => {
+        const newName = renameInput.value.trim();
+        if (newName && renameIndex >= 0 && renameIndex < products.length && products[renameIndex].isCustom) {
+            products[renameIndex].name = newName;
+            if (originalImg) {
+                renderProductGrid();
+            }
+            showToast(`✧ Renamed to "${newName}"`, 1500);
+        }
+        renameModal.classList.add('hidden');
+        renameIndex = -1;
+    };
+
+    renameCancel.onclick = () => {
+        renameModal.classList.add('hidden');
+        renameIndex = -1;
+    };
+
+    const unitBtns = document.querySelectorAll('.unit-btn');
+    function updateUnitLabels() {
+        if (displayUnit === "inches") {
+            customWLabel.textContent = "width (inches)";
+            customHLabel.textContent = "height (inches)";
+            customW.placeholder = "width in inches";
+            customH.placeholder = "height in inches";
+            if (parseFloat(customW.value) > 100) customW.value = (parseFloat(customW.value) / DPI).toFixed(2);
+            if (parseFloat(customH.value) > 100) customH.value = (parseFloat(customH.value) / DPI).toFixed(2);
+        } else {
+            customWLabel.textContent = "width (pixels)";
+            customHLabel.textContent = "height (pixels)";
+            customW.placeholder = "width in pixels";
+            customH.placeholder = "height in pixels";
+            if (parseFloat(customW.value) < 100) customW.value = Math.round(parseFloat(customW.value) * DPI);
+            if (parseFloat(customH.value) < 100) customH.value = Math.round(parseFloat(customH.value) * DPI);
+        }
+
+        if (originalImg) {
+            const inchesWidth = (patternWidth / DPI).toFixed(2);
+            const inchesHeight = (patternHeight / DPI).toFixed(2);
+            sizeText.innerHTML = displayUnit === 'inches'
+                ? `${inchesWidth}" × ${inchesHeight}"`
+                : `${patternWidth} × ${patternHeight} px`;
+            const tiledWidthInches = (tiledPatternWidth / DPI).toFixed(2);
+            const tiledHeightInches = (tiledPatternHeight / DPI).toFixed(2);
+            tiledSizeText.innerHTML = displayUnit === 'inches'
+                ? `${tiledWidthInches}" × ${tiledHeightInches}"`
+                : `${tiledPatternWidth} × ${tiledPatternHeight} px`;
+            renderProductGrid();
+        }
+    }
+
+    unitBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            displayUnit = btn.dataset.unit;
+            unitBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            updateUnitLabels();
+        });
+    });
+
+    updateUnitLabels();
+    updateSvgOptionState();
+    updateDownloadUi();
+    renderProductGrid();
+    updateCounts();
+    
+</script>
+</body>
+</html>
